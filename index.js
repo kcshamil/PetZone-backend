@@ -1,47 +1,44 @@
-// Load env variables
 require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const cookieParser = require("cookie-parser"); // ✅ REQUIRED for req.cookies
 
 const router = require("./routes/userRouting");
 const petRouter = require("./routes/petRouting");
+const adminRouter = require("./routes/adminRouting");
 
 require("./config/db");
 
 const petstoreServer = express();
 
-// ✅ CORS (allow cookies if you use jwt cookie)
+// CORS (allow cookies if you use jwt cookie)
 petstoreServer.use(
   cors({
-    origin: "http://localhost:5173", // change if your React runs on different port
-    credentials: true,              // ✅ IMPORTANT when using cookies
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
 
-// ✅ Parse cookies (needed for req.cookies.jwt)
-petstoreServer.use(cookieParser());
-
-// ✅ Increase payload size limits for base64 images
+// Increase payload size limits for base64 images
 petstoreServer.use(express.json({ limit: "50mb" }));
 petstoreServer.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// ✅ Home route (keep before listen)
+// Home route
 petstoreServer.get("/", (req, res) => {
   res
     .status(200)
     .send(`<h1>petstore Server Started...... And Waiting for Client Request</h1>`);
 });
 
-// ✅ Use routers
-petstoreServer.use(router); // or: petstoreServer.use("/api/users", router);
+// Use routers
+petstoreServer.use(router);
 petstoreServer.use("/api/pets", petRouter);
+petstoreServer.use("/api/admin", adminRouter);
 
-// ✅ Static files
+// Static files
 petstoreServer.use("/uploads", express.static("./uploads"));
 
-// ✅ Global error handler
+// Global error handler
 petstoreServer.use((err, req, res, next) => {
   console.error(err.stack);
 
@@ -53,7 +50,7 @@ petstoreServer.use((err, req, res, next) => {
     });
   }
 
-  // Multer errors (even if you're not using now, safe)
+  // Multer errors
   if (err.name === "MulterError") {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
@@ -81,7 +78,7 @@ petstoreServer.use((err, req, res, next) => {
   });
 });
 
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 3000;
 petstoreServer.listen(PORT, () => {
   console.log("petstore Server Started...... And Waiting for Client Request");

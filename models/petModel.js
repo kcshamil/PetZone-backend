@@ -1,4 +1,3 @@
-// models/petModel.js
 const mongoose = require("mongoose");
 
 const petRegistrationSchema = new mongoose.Schema(
@@ -23,7 +22,6 @@ const petRegistrationSchema = new mongoose.Schema(
       },
       role: {
         type: String,
-        enum: ["owner", "admin"],
         default: "owner",
       },
     },
@@ -39,36 +37,99 @@ const petRegistrationSchema = new mongoose.Schema(
       vaccinated: { type: Boolean, default: false },
       trained: { type: Boolean, default: false },
 
+      // Photos array (base64 strings or URLs)
       photos: {
         type: [String],
-        validate: {
-          validator: (v) => v.length >= 3,
-          message: "At least 3 photos required",
-        },
+        default: [],
       },
 
+      // License can be base64 string, URL, or plain text
       license: {
         type: String,
         required: true,
       },
-    }
+      
+      // ✅ NEW: Adoption status
+      adoptionStatus: {
+        type: String,
+        enum: ["available", "adopted", "pending_adoption"],
+        default: "available",
+      },
+    },
+
+    // Registration status field
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+
+    // ✅ NEW: Adoption records - tracks who adopted this pet
+    adoptions: [
+      {
+        adopterEmail: {
+          type: String,
+          required: true,
+        },
+        adopterName: {
+          type: String,
+          required: true,
+        },
+        adopterPhone: {
+          type: String,
+          required: true,
+        },
+        adopterMessage: {
+          type: String,
+        },
+        adoptionDate: {
+          type: Date,
+          default: Date.now,
+        },
+        adoptionStatus: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+      }
+    ],
+
+    // Active status
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    // Login attempts tracking
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    lockUntil: {
+      type: Date,
+    },
+
+    passwordChangedAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true, // Adds createdAt and updatedAt automatically
   }
 );
 
-// ----------------------------------------------------
-// ✅ REQUIRED STEP-4 METHOD (NO bcrypt)
-// ----------------------------------------------------
+// Password comparison (plain text - for learning only)
 petRegistrationSchema.methods.comparePassword = function (candidatePassword) {
   return candidatePassword === this.owner.password;
 };
 
-// ----------------------------------------------------
-// Lock helpers
-// ----------------------------------------------------
+// Check if account is locked
 petRegistrationSchema.virtual("isLocked").get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
+// Increment login attempts
 petRegistrationSchema.methods.incLoginAttempts = function () {
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return this.updateOne({
@@ -85,6 +146,7 @@ petRegistrationSchema.methods.incLoginAttempts = function () {
   return this.updateOne(updates);
 };
 
+// Reset login attempts
 petRegistrationSchema.methods.resetLoginAttempts = function () {
   return this.updateOne({
     $set: { loginAttempts: 0 },
@@ -92,4 +154,13 @@ petRegistrationSchema.methods.resetLoginAttempts = function () {
   });
 };
 
-module.exports = mongoose.model("PetRegistration", petRegistrationSchema);
+// Check if password was changed after JWT was issued
+petRegistrationSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    return JWTTimestamp < changedTimestamp;
+  }
+  return false;
+};
+
+module.exports = mongoose.model("petregistrations", petRegistrationSchema);

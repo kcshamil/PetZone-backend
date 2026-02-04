@@ -1,34 +1,38 @@
 // routes/petRouting.js
 const express = require("express");
 const router = express.Router();
+const petController = require("../controller/petController");
 
-const petRegController = require("../controller/petController");
+// ==================== PUBLIC ROUTES ====================
 
-// Public routes
-router.post("/register", petRegController.registerPetWithOwner);
-router.post("/login", petRegController.login);
-router.get("/logout", petRegController.logout);
+// Pet owner registration and login (no admin functionality)
+router.post("/register", petController.registerPetWithOwner);
+router.post("/login", petController.login);
+router.get("/logout", petController.logout);
 
-// Protected routes
-router.use(petRegController.protect);
+// âœ… Get approved pets - PUBLIC (for Pets page)
+// Only shows pets with status="approved" and adoptionStatus="available"
+router.get("/approved-pets", petController.getApprovedPets);
 
-// Owner routes
-router.get("/my-profile", petRegController.getMyProfile);
-router.patch("/update-pet", petRegController.updatePetInfo);
-router.patch("/update-owner", petRegController.updateOwnerInfo);
-router.patch("/update-password", petRegController.updatePassword);
+// âœ… NEW: Submit adoption request - PUBLIC (anyone can request to adopt)
+router.post("/adopt/:petId", petController.submitAdoptionRequest);
 
-// Admin routes
-router.get(
-  "/all-registrations",
-  petRegController.restrictTo("admin"),
-  petRegController.getAllRegistrations
-);
+// âœ… NEW: Get user's adoption requests by email - PUBLIC (track adoption status)
+router.get("/user-adoption-requests", petController.getUserAdoptionRequests);
 
-router.patch(
-  "/status/:id",
-  petRegController.restrictTo("admin"),
-  petRegController.updateRegistrationStatus
-);
+// ==================== PROTECTED ROUTES (Pet Owners Only) ====================
+// Apply authentication middleware to all routes below
+router.use(petController.protect);
+
+// Owner can manage their own pet registration
+router.get("/my-profile", petController.getMyProfile);
+router.patch("/update-pet", petController.updatePetInfo);
+router.patch("/update-owner", petController.updateOwnerInfo);
+router.patch("/update-password", petController.updatePassword);
+router.delete("/delete-registration", petController.deleteMyRegistration);
+
+// âœ… Adoption management routes - Owner views/manages their pet's adoption requests
+router.get("/my-adoption-requests", petController.getMyAdoptionRequests);
+router.patch("/adoption-request/:adoptionId", petController.updateAdoptionRequestStatus);
 
 module.exports = router;

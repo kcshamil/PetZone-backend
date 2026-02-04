@@ -1,6 +1,6 @@
 const users = require('../models/userModel')
 // jsonwebtoken
-const jsw = require("jsonwebtoken")
+const jwt = require("jsonwebtoken")
 
 // register api request
 exports.registerController = async (req,res)=>{
@@ -24,8 +24,6 @@ exports.registerController = async (req,res)=>{
         console.log(error);
         res.status(500).json(error)
     }
-
-
 }
 
 // login api
@@ -39,7 +37,7 @@ exports.loginController = async (req,res)=>{
         if(existingUser){
             if(password == existingUser.password){
                 // generate token
-                const token = jsw.sign({userMail:existingUser.email,role:existingUser.role},process.env.JWTSECRET)
+                const token = jwt.sign({userMail:existingUser.email,role:existingUser.role},process.env.JWT_SECRET)
                 res.status(200).json({user:existingUser,token})
             }else{
                 res.status(401).json("incorrect email/password")
@@ -53,17 +51,93 @@ exports.loginController = async (req,res)=>{
     }
 }
 
-// user edit ptofile
+// ✅ Create Admin Account - Add admin to users collection
+exports.createAdminController = async (req, res) => {
+    console.log("Inside createAdminController");
+    const { username, email, password } = req.body;
 
+    if (!username || !email || !password) {
+        return res.status(400).json("Username, email, and password are required");
+    }
+
+    try {
+        // Check if email already exists
+        const existingUser = await users.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json("User already exists with this email");
+        }
+
+        // Create new admin user
+        const newAdmin = new users({
+            username,
+            email,
+            password,
+            role: "admin", // Set role as admin
+            bio: "System Administrator"
+        });
+
+        await newAdmin.save();
+        
+        // Generate token
+        const token = jwt.sign(
+            { userMail: newAdmin.email, role: newAdmin.role }, 
+            process.env.JWT_SECRET
+        );
+
+        res.status(201).json({ 
+            user: newAdmin, 
+            token,
+            message: "Admin account created successfully" 
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+};
+
+// ✅ Admin Login - separate endpoint for admin login
+exports.adminLoginController = async (req, res) => {
+    console.log("inside adminLoginController");
+    const { email, password } = req.body;
+    
+    try {
+        const existingUser = await users.findOne({ email });
+        
+        if (!existingUser) {
+            return res.status(404).json("Account does not exist");
+        }
+
+        // Check if user has admin role
+        if (existingUser.role !== "admin") {
+            return res.status(403).json("Access denied. Admin privileges required.");
+        }
+
+        if (password === existingUser.password) {
+            // generate token
+            const token = jwt.sign(
+                { userMail: existingUser.email, role: existingUser.role }, 
+                process.env.JWT_SECRET
+            );
+            res.status(200).json({ user: existingUser, token });
+        } else {
+            res.status(401).json("incorrect email/password");
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+};
+
+// user edit profile
 exports.updateUserProfileController = async (req,res)=>{
     console.log("inside updateUserProfileController ");
-//get id from req url
+    //get id from req url
     const {id} = req.params
-//get email
+    //get email
     const email = req.payload
-//get body text content : username
+    //get body text content : username
     const {username,password,bio,role,picture} = req.body
-//get file data
+    //get file data
     const uploadImages = req.file?req.file.filename:picture
     console.log(id,email,username,password,bio,uploadImages,role);
     try{
@@ -76,22 +150,17 @@ exports.updateUserProfileController = async (req,res)=>{
         console.log(error);
         res.status(500).json(error)
     }
-    
 }
 
-
 //get all users - admin : login user
- exports.getAllUsersContoller = async (req,res)=>{
-    console.log("inside getAllUsersContoller");
-    //
+exports.getAllUsersController = async (req,res)=>{
+    console.log("inside getAllUsersController");
     try{
-            //get all users  other than admin
+        //get all users other than admin
         const allUsers = await users.find({role:{$ne:"admin"}})
         res.status(200).json(allUsers)
     }catch(error){
         console.log(error);
         res.status(500).json(error)
-        
     }   
 }
-// admin edt profile
