@@ -6,7 +6,7 @@ const cors = require("cors");
 const router = require("./routes/userRouting");
 const petRouter = require("./routes/petRouting");
 const adminRouter = require("./routes/adminRouting");
-
+const productRouter = require("./routes/productRouting")
 require("./config/db");
 
 const petstoreServer = express();
@@ -34,6 +34,8 @@ petstoreServer.get("/", (req, res) => {
 petstoreServer.use(router);
 petstoreServer.use("/api/pets", petRouter);
 petstoreServer.use("/api/admin", adminRouter);
+petstoreServer.use("/api/products", productRouter);
+
 
 // Static files
 petstoreServer.use("/uploads", express.static("./uploads"));
