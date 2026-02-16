@@ -51,7 +51,34 @@ exports.loginController = async (req,res)=>{
     }
 }
 
-// ✅ Create Admin Account - Add admin to users collection
+// google login
+exports.googleLoginController = async (req,res)=>{
+    console.log("inside googleLoginController");
+    const {email,password,username} = req.body
+    console.log(email,password,username);
+    try{
+        // check mail in model
+        const existingUser = await users.findOne({email})
+        if(existingUser){
+            // generate token
+                const token = jwt.sign({userMail:existingUser.email,role:existingUser.role},process.env.JWT_SECRET)
+                res.status(200).json({user:existingUser,token})
+        }else{
+            // register
+            const newUser = await users.create({
+                username,email,password
+            })
+            const token = jwt.sign({userMail:newUser.email,role:newUser.role},process.env.JWT_SECRET)
+                res.status(200).json({user:newUser,token})
+
+        }
+    }catch(error){
+        console.log(error);
+        res.status(500).json(error)
+    }
+}
+
+//  Create Admin Account - Add admin to users collection
 exports.createAdminController = async (req, res) => {
     console.log("Inside createAdminController");
     const { username, email, password } = req.body;
@@ -95,7 +122,7 @@ exports.createAdminController = async (req, res) => {
     }
 };
 
-// ✅ Admin Login - separate endpoint for admin login
+//  Admin Login - separate endpoint for admin login
 exports.adminLoginController = async (req, res) => {
     console.log("inside adminLoginController");
     const { email, password } = req.body;

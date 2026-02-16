@@ -1,7 +1,6 @@
 const express = require("express");
 const adminRouter = express.Router();
 
-// Import your PetRegistration model
 const PetRegistration = require("../models/petModel");
 
 // ==================== ADMIN ROUTES ====================

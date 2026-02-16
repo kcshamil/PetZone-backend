@@ -1,4 +1,3 @@
-// controller/petController.js
 const PetRegistration = require("../models/petModel");
 const jwt = require("jsonwebtoken");
 
@@ -29,7 +28,7 @@ const createSendToken = (registration, statusCode, res) => {
 
 // ==================== PUBLIC ROUTES ====================
 
-// ✅ Register Pet with Owner - Creates entry with "pending" status
+// Register Pet with Owner - Creates entry with "pending" status
 exports.registerPetWithOwner = catchAsync(async (req, res) => {
   const { owner, pet } = req.body;
 
@@ -65,7 +64,7 @@ exports.registerPetWithOwner = catchAsync(async (req, res) => {
     });
   }
 
-  // ✅ Create new pet registration with PENDING status
+  // Create new pet registration with PENDING status
   const newRegistration = await PetRegistration.create({
     owner: {
       email: owner.email,
@@ -95,7 +94,7 @@ exports.registerPetWithOwner = catchAsync(async (req, res) => {
   return createSendToken(newRegistration, 201, res);
 });
 
-// ✅ Owner Login - Only for pet owners
+// Owner Login - Only for pet owners
 exports.login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
 
@@ -118,7 +117,7 @@ exports.login = catchAsync(async (req, res) => {
     });
   }
 
-  // ✅ Only allow owners (no admin login here)
+  // Only allow owners (no admin login here)
   if (registration.owner.role !== "owner") {
     return res.status(403).json({ 
       success: false, 
@@ -158,7 +157,7 @@ exports.login = catchAsync(async (req, res) => {
   return createSendToken(registration, 200, res);
 });
 
-// ✅ Logout
+// Logout
 exports.logout = (req, res) => {
   res.cookie("jwt", "loggedout", {
     expires: new Date(Date.now() + 10 * 1000),
@@ -172,8 +171,8 @@ exports.logout = (req, res) => {
   });
 };
 
-// ✅ Get Approved Pets - PUBLIC (for Pets page)
-// ⚠️ IMPORTANT: Only shows pets with status="approved" and adoptionStatus="available"
+// Get Approved Pets - PUBLIC (for Pets page)
+// IMPORTANT: Only shows pets with status="approved" and adoptionStatus="available"
 exports.getApprovedPets = catchAsync(async (req, res) => {
   const approvedPets = await PetRegistration.find({ 
     status: "approved",
@@ -189,7 +188,7 @@ exports.getApprovedPets = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ NEW: Submit Adoption Request - PUBLIC (anyone can request to adopt)
+// NEW: Submit Adoption Request - PUBLIC (anyone can request to adopt)
 exports.submitAdoptionRequest = catchAsync(async (req, res) => {
   const { petId } = req.params;
   const { adopterName, adopterEmail, adopterPhone, adopterMessage } = req.body;
@@ -251,7 +250,7 @@ exports.submitAdoptionRequest = catchAsync(async (req, res) => {
 
 // ==================== AUTH MIDDLEWARE ====================
 
-// ✅ Protect middleware - Verifies pet owner token
+// Protect middleware - Verifies pet owner token
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
 
@@ -304,7 +303,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
 // ==================== PROTECTED CONTROLLERS (Pet Owners Only) ====================
 
-// ✅ Get My Profile - Owner can view their own pet registration
+// Get My Profile - Owner can view their own pet registration
 exports.getMyProfile = catchAsync(async (req, res) => {
   const registration = await PetRegistration.findById(req.registration.id);
   
@@ -314,7 +313,7 @@ exports.getMyProfile = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ Update Pet Info - Owner can update their pet details
+// Update Pet Info - Owner can update their pet details
 exports.updatePetInfo = catchAsync(async (req, res) => {
   const { pet } = req.body;
   
@@ -355,7 +354,7 @@ exports.updatePetInfo = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ Update Owner Info - Owner can update their phone number
+// Update Owner Info - Owner can update their phone number
 exports.updateOwnerInfo = catchAsync(async (req, res) => {
   const { phone } = req.body;
   
@@ -378,7 +377,7 @@ exports.updateOwnerInfo = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ Update Password - Owner can change their password
+// Update Password - Owner can change their password
 exports.updatePassword = catchAsync(async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
 
@@ -416,7 +415,7 @@ exports.updatePassword = catchAsync(async (req, res) => {
   return createSendToken(registration, 200, res);
 });
 
-// ✅ NEW: Get My Adoption Requests - Owner can see who wants to adopt their pet
+// NEW: Get My Adoption Requests - Owner can see who wants to adopt their pet
 exports.getMyAdoptionRequests = catchAsync(async (req, res) => {
   const registration = await PetRegistration.findById(req.registration.id);
   
@@ -427,7 +426,7 @@ exports.getMyAdoptionRequests = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ NEW: Update Adoption Request Status - Owner can approve/reject adoption requests
+// NEW: Update Adoption Request Status - Owner can approve/reject adoption requests
 exports.updateAdoptionRequestStatus = catchAsync(async (req, res) => {
   const { adoptionId } = req.params;
   const { adoptionStatus } = req.body;
@@ -464,7 +463,7 @@ exports.updateAdoptionRequestStatus = catchAsync(async (req, res) => {
   // If approved, mark pet as adopted and hide from listings
   if (adoptionStatus === "approved") {
     registration.pet.adoptionStatus = "adopted";
-    // registration.isActive = false; // ✅ FIXED: Removed to prevent account deactivation
+    // registration.isActive = false; // FIXED: Removed to prevent account deactivation
     
     // Reject all other pending adoptions
     registration.adoptions.forEach(adp => {
@@ -495,10 +494,10 @@ exports.updateAdoptionRequestStatus = catchAsync(async (req, res) => {
 });
 
 // ==================== ADMIN MANAGEMENT ENDPOINTS ====================
-// ⚠️ NOTE: These are called by admin (authenticated via users collection)
-// ⚠️ Admin authentication is handled by adminAuthMiddleware in routes
+//  NOTE: These are called by admin (authenticated via users collection)
+//  Admin authentication is handled by adminAuthMiddleware in routes
 
-// ✅ Get All Pet Registrations - For admin dashboard
+//  Get All Pet Registrations - For admin dashboard
 exports.getAllRegistrations = catchAsync(async (req, res) => {
   // Get all pet registrations (all statuses: pending, approved, rejected)
   const registrations = await PetRegistration.find({ 
@@ -512,7 +511,7 @@ exports.getAllRegistrations = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ Update Registration Status - Admin approves/rejects pet registration
+//  Update Registration Status - Admin approves/rejects pet registration
 exports.updateRegistrationStatus = catchAsync(async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
@@ -599,7 +598,7 @@ exports.getUserAdoptionRequests = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ NEW: Delete Pet Registration - Owner can delete their registration
+// Delete Pet Registration - Owner can delete their registration
 exports.deleteMyRegistration = catchAsync(async (req, res) => {
   const registrationId = req.registration.id;
 
